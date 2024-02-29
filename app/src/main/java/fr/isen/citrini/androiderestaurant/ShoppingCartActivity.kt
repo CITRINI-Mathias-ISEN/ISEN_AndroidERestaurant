@@ -36,6 +36,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.google.gson.Gson
+import fr.isen.citrini.androiderestaurant.service.Cart
 import fr.isen.citrini.androiderestaurant.ui.theme.AndroidERestaurantTheme
 
 class ShoppingCartActivity : ComponentActivity() {
@@ -109,7 +110,7 @@ class ShoppingCartActivity : ComponentActivity() {
                                     IconButton(onClick = { Cart.addDish(dish, 1); quantityState.value = quantityState.value + 1; totalState.value = Cart.getTotalPrice(); cartState.value = Cart.getCart()}) {
                                         Icon(painter = painterResource(id = R.drawable.baseline_add_circle_24), contentDescription = "Add to cart")
                                     }
-                                    Button(onClick = { Cart.deleteItem(dish); cartState.value = Cart.getCart() }, modifier = Modifier.padding(8.dp)) {
+                                    Button(onClick = { Cart.deleteItem(dish); totalState.value = Cart.getTotalPrice(); cartState.value = Cart.getCart() }, modifier = Modifier.padding(8.dp)) {
                                         Text(text = "Delete", color = Color.White)
                                     }
                                 }
@@ -151,7 +152,6 @@ class ShoppingCartActivity : ComponentActivity() {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     fun shoppingHeader() {
-        val context = LocalContext.current;
         TopAppBar(
             colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                 containerColor = MaterialTheme.colorScheme.primaryContainer,

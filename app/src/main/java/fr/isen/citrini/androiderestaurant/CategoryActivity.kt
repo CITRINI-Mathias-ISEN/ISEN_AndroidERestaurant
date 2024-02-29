@@ -15,31 +15,21 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Badge
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import com.android.volley.Request
 import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.Volley
 import com.google.accompanist.swiperefresh.SwipeRefresh
 import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import com.google.gson.Gson
+import fr.isen.citrini.androiderestaurant.service.Cart
 import fr.isen.citrini.androiderestaurant.ui.theme.AndroidERestaurantTheme
 import org.json.JSONObject
 
@@ -67,6 +57,10 @@ class CategoryActivity : ComponentActivity() {
         cartItemCountState.value = Cart.getNumberOfItems()
     }
 
+    /**
+     * This function is used to display the category view
+     * It will display the category name and the list of dishes
+     */
     @Composable
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter", "UnrememberedMutableState")
     private fun categoryView() {
@@ -98,6 +92,9 @@ class CategoryActivity : ComponentActivity() {
         )
     }
 
+    /**
+     * This function is used to display a dish cell, from the category view
+     */
     @Composable
     fun DishCell(dish: Dish) {
         // Take the field nameFr from the ingredients list
@@ -117,12 +114,21 @@ class CategoryActivity : ComponentActivity() {
         )
     }
 
+    /**
+     * This function is used to handle the click on a dish cell
+     * @param dish the dish that has been clicked
+     */
     private fun onClick(dish: Dish) {
         val intent = Intent(this, DishDetailActivity::class.java)
         intent.putExtra("dish", Gson().toJson(dish))
         startActivity(intent)
     }
 
+    /**
+     * This function is used to refresh the category
+     * @param type the type of the category
+     * @param categoryState the state of the category
+     */
     private fun refreshCategory(type: String, categoryState: MutableState<Category>) {
         val requestBody = JSONObject()
         requestBody.put("id_shop", 1)
@@ -138,12 +144,11 @@ class CategoryActivity : ComponentActivity() {
                 var listCategory = gson.fromJson(response.toString(), CategoryList::class.java).data.find { it.nameFr == type }
 
                 // Cache the result
-                cacheCategory(cacheKey, listCategory)
+                cacheCategory(this, cacheKey, listCategory)
                 if (listCategory != null) {
                     categoryState.value = listCategory
                 }
                 Log.d("Refresh", "requestCategory")
-
             },
             { _ ->
                 Log.d("Refresh", "requestCategory error")
@@ -151,19 +156,5 @@ class CategoryActivity : ComponentActivity() {
         )
 
         Volley.newRequestQueue(this).add(jsonObjectRequest)
-    }
-
-    private fun cacheCategory(cacheKey: String, category: Category?) {
-        val sharedPreferences = getSharedPreferences("MyCache", Context.MODE_PRIVATE)
-        val editor = sharedPreferences.edit()
-
-        if (category != null) {
-            val categoryJson = Gson().toJson(category)
-            editor.putString(cacheKey, categoryJson)
-        } else {
-            editor.remove(cacheKey)
-        }
-
-        editor.apply()
     }
 }

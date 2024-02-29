@@ -1,4 +1,4 @@
-package fr.isen.citrini.androiderestaurant
+package fr.isen.citrini.androiderestaurant.service
 
 import Dish
 import android.content.Context
@@ -11,15 +11,15 @@ class Cart {
         private lateinit var context: Context
 
         fun setContext(context: Context) {
-            this.context = context
-            this.loadCart()
+            Companion.context = context
+            loadCart()
         }
 
         private fun loadCart() {
             try {
                 val json = context.openFileInput("cart.json")
                 val carString = json.readBytes().toString(Charsets.UTF_8)
-                this.cart = Gson().fromJson(carString, CartJSON::class.java)
+                cart = Gson().fromJson(carString, CartJSON::class.java)
                 json.close()
             } catch (e: Exception) {
                 Log.d("Cart", "Cart: $e")
@@ -38,7 +38,7 @@ class Cart {
             } else {
                 cart.items = cart.items + CartItem(dish, quantity)
             }
-            this.saveCart(context)
+            saveCart(context)
         }
 
         fun removeItem(dish: Dish) {
@@ -49,7 +49,7 @@ class Cart {
                     deleteItem(dish)
                 }
             }
-            this.saveCart(context)
+            saveCart(context)
         }
 
         fun deleteItem(dish: Dish) {
@@ -57,7 +57,7 @@ class Cart {
             if (index != -1) {
                 cart.items = cart.items - cart.items[index]
             }
-            this.saveCart(context)
+            saveCart(context)
         }
 
         private fun saveCart(context: Context) {

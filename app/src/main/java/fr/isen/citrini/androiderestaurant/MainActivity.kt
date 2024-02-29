@@ -6,7 +6,6 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -43,10 +42,10 @@ import coil.compose.rememberAsyncImagePainter
 import coil.request.CachePolicy
 import coil.request.ImageRequest
 import com.android.volley.Request
-import com.android.volley.toolbox.ImageLoader
 import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.Volley
 import com.google.gson.Gson
+import fr.isen.citrini.androiderestaurant.service.Cart
 import fr.isen.citrini.androiderestaurant.ui.theme.AndroidERestaurantTheme
 import org.json.JSONObject
 
@@ -74,6 +73,9 @@ class MainActivity : ComponentActivity() {
         cartItemCountState.value = Cart.getNumberOfItems()
     }
 
+    /**
+     * Display the menu of the application
+     */
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     @Composable
     fun SetupMenu() {
@@ -106,6 +108,10 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /**
+     * Display a button with the name of the category
+     * @param name: Int - Name of the category
+     */
     @Composable
     fun menuButton(name: Int, onClick : () -> Unit) {
         val context = LocalContext.current;
@@ -125,6 +131,11 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /**
+     * Request the category to the server
+     * @param type: DishType - Type of the category
+     * @param errorState: MutableState<Boolean> - State of the error
+     */
     private fun requestCategory(type: DishType, errorState: MutableState<Boolean>) {
         // Request to the server
         val requestBody = JSONObject()
@@ -149,7 +160,7 @@ class MainActivity : ComponentActivity() {
                 var listCategory = gson.fromJson(response.toString(), CategoryList::class.java).data.find { it.nameFr == type.typeFr }
 
                 // Cache the result
-                cacheCategory(cacheKey, listCategory)
+                cacheCategory(this, cacheKey, listCategory)
 
                 navigateToCategoryActivity(listCategory)
             },
@@ -161,6 +172,10 @@ class MainActivity : ComponentActivity() {
         Volley.newRequestQueue(this).add(jsonObjectRequest)
     }
 
+    /**
+     * Get the cached category, if it exists
+     * @param cacheKey: String - Key of the cache
+     */
     private fun getCachedCategory(cacheKey: String): Category? {
         val sharedPreferences = getSharedPreferences("MyCache", Context.MODE_PRIVATE)
         val cachedCategoryJson = sharedPreferences.getString(cacheKey, null)
@@ -171,26 +186,35 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun cacheCategory(cacheKey: String, category: Category?) {
-        val sharedPreferences = getSharedPreferences("MyCache", Context.MODE_PRIVATE)
-        val editor = sharedPreferences.edit()
-
-        if (category != null) {
-            val categoryJson = Gson().toJson(category)
-            editor.putString(cacheKey, categoryJson)
-        } else {
-            editor.remove(cacheKey)
-        }
-
-        editor.apply()
-    }
-
+    /**
+     * Navigate to the category activity
+     * @param category: Category? - Category to display
+     */
     private fun navigateToCategoryActivity(category: Category?) {
         val intent = Intent(this, CategoryActivity::class.java)
         intent.putExtra("category", Gson().toJson(category))
         startActivity(intent)
     }
 
+}
+
+/**
+ * Put the category in the cache
+ * @param cacheKey: String - Key of the cache
+ * @param category: Category? - Category to cache
+ */
+fun cacheCategory(context:Context, cacheKey: String, category: Category?) {
+    val sharedPreferences = context.getSharedPreferences("MyCache", Context.MODE_PRIVATE)
+    val editor = sharedPreferences.edit()
+
+    if (category != null) {
+        val categoryJson = Gson().toJson(category)
+        editor.putString(cacheKey, categoryJson)
+    } else {
+        editor.remove(cacheKey)
+    }
+
+    editor.apply()
 }
 
 @Composable
@@ -254,6 +278,12 @@ fun TakeTheBestImage(image: String) {
 }
 
 
+/**
+ * Display the header of the application
+ * @param title: String - Title of the application
+ * @param cartItemCountState: MutableState<Int> - Number of items in the cart
+ * @return TopAppBar
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun header(title: String = "PizzaHouse", cartItemCountState : MutableState<Int> = mutableIntStateOf(0)) {
