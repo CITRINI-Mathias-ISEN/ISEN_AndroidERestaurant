@@ -20,5 +20,8 @@
         <item>Ice cream</item>
     </string-array>
     <string name="title_activity_dish_detail">DishDetailActivity</string>
-    <string name="title_activity_shopping_cart">ShoppingCart</string>
+    <string name="title_activity_shopping_cart">Panier</string>
+    <string name="order">Commander pour</string>
+    <string name="delete">Supprimer</string>
+    <string name="added_to_cart">ajouté au panier</string>
 </resources>

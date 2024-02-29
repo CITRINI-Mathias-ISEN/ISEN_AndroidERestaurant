@@ -32,6 +32,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.google.gson.Gson
 import fr.isen.citrini.androiderestaurant.service.Cart
+import fr.isen.citrini.androiderestaurant.service.ImageService
 import fr.isen.citrini.androiderestaurant.ui.theme.AndroidERestaurantTheme
 
 class DishDetailActivity : ComponentActivity() {
@@ -44,7 +45,7 @@ class DishDetailActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             AndroidERestaurantTheme {
-                dishDetailView()
+                DishDetailView()
             }
         }
     }
@@ -52,28 +53,28 @@ class DishDetailActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         Cart.setContext(this)
-        cartItemCountState.value = Cart.getNumberOfItems()
+        cartItemCountState.intValue = Cart.getNumberOfItems()
     }
 
     @OptIn(ExperimentalFoundationApi::class)
     @Composable
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter", "UnrememberedMutableState")
-    private fun dishDetailView() {
-        var quantity = mutableIntStateOf(1)
-        var price = mutableFloatStateOf(dish.prices[0].price)
+    private fun DishDetailView() {
+        val quantity = mutableIntStateOf(1)
+        val price = mutableFloatStateOf(dish.prices[0].price)
 
         Scaffold(
             topBar = {
-                header(cartItemCountState=cartItemCountState)
+                Header(cartItemCountState=cartItemCountState)
             },
             bottomBar = {
                 Button(
                     onClick = {
-                        Cart.addDish(dish, quantity.value)
-                        cartItemCountState.value = Cart.getNumberOfItems()
+                        Cart.addDish(dish, quantity.intValue)
+                        cartItemCountState.intValue = Cart.getNumberOfItems()
                         AlertDialog.Builder(this)
-                            .setTitle("Added to cart")
-                            .setMessage(dish.nameEn + " x" + quantity.value + " added to cart !")
+                            .setTitle(getString(R.string.title_activity_shopping_cart))
+                            .setMessage(dish.nameEn + " x" + quantity.intValue + " " + getString(R.string.added_to_cart) + " !")
                             .setPositiveButton("OK") { dialog, which -> }
                             .show()
                     },
@@ -83,7 +84,7 @@ class DishDetailActivity : ComponentActivity() {
                     colors = ButtonDefaults.buttonColors( containerColor = MaterialTheme.colorScheme.primaryContainer)
                 ) {
                     Text(
-                        text = "Total: ${(price.value * quantity.value)}€",
+                        text = "Total: ${(price.floatValue * quantity.intValue)}€",
                         color = Color.White
                     )
                 }
@@ -105,7 +106,7 @@ class DishDetailActivity : ComponentActivity() {
                             dish.images.size
                         })
                         HorizontalPager(state = pagerState) { page ->
-                            TakeTheBestImage(dish.images[page])
+                            ImageService.TakeTheBestImage(dish.images[page])
                         }
                     }
                 }
@@ -132,11 +133,11 @@ class DishDetailActivity : ComponentActivity() {
                         horizontalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        IconButton(onClick = { if (quantity.value > 1) quantity.value--}) {
+                        IconButton(onClick = { if (quantity.intValue > 1) quantity.intValue--}) {
                             Icon(painter = painterResource(id = R.drawable.baseline_remove_circle_24), contentDescription = "Add to cart")
                         }
-                        Text(text = quantity.value.toString() , modifier = Modifier.padding(8.dp))
-                        IconButton(onClick = { quantity.value++}) {
+                        Text(text = quantity.intValue.toString() , modifier = Modifier.padding(8.dp))
+                        IconButton(onClick = { quantity.intValue++}) {
                             Icon(painter = painterResource(id = R.drawable.baseline_add_circle_24), contentDescription = "Add to favorite")
                         }
                     }

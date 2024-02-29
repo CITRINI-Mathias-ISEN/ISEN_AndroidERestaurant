@@ -3,7 +3,6 @@ package fr.isen.citrini.androiderestaurant
 import Category
 import CategoryList
 import android.annotation.SuppressLint
-import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
@@ -13,7 +12,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Badge
@@ -34,25 +32,30 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import coil.compose.rememberAsyncImagePainter
-import coil.request.CachePolicy
-import coil.request.ImageRequest
 import com.android.volley.Request
 import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.Volley
 import com.google.gson.Gson
+import fr.isen.citrini.androiderestaurant.service.CacheService
 import fr.isen.citrini.androiderestaurant.service.Cart
 import fr.isen.citrini.androiderestaurant.ui.theme.AndroidERestaurantTheme
 import org.json.JSONObject
 
-enum class DishType(val typeFr: String) {
-    STARTER("Entrées"),
-    MAIN("Plats"),
-    DESSERT("Desserts"),
+enum class DishType {
+    STARTER, MAIN, DESSERT;
+
+    @Composable
+    fun title(): String {
+        return when(this) {
+            STARTER -> stringResource(id = R.string.starter)
+            MAIN -> stringResource(id = R.string.main)
+            DESSERT -> stringResource(id = R.string.dessert)
+        }
+    }
 }
 
 class MainActivity : ComponentActivity() {
@@ -63,14 +66,14 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             AndroidERestaurantTheme {
-                SetupMenu();
+                SetupMenu()
             }
         }
     }
 
     override fun onResume() {
         super.onResume()
-        cartItemCountState.value = Cart.getNumberOfItems()
+        cartItemCountState.intValue = Cart.getNumberOfItems()
     }
 
     /**
@@ -79,11 +82,14 @@ class MainActivity : ComponentActivity() {
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     @Composable
     fun SetupMenu() {
-        var errorState = remember { mutableStateOf(false) }
-        val context = LocalContext.current;
+        val errorState = remember { mutableStateOf(false) }
+        val context = LocalContext.current
+        val starterString = DishType.STARTER.title()
+        val mainString = DishType.MAIN.title()
+        val dessertString = DishType.DESSERT.title()
         Scaffold(
             topBar = {
-                header(cartItemCountState = cartItemCountState)
+                Header(cartItemCountState = cartItemCountState)
             }
         ) {
             Column(
@@ -97,9 +103,9 @@ class MainActivity : ComponentActivity() {
                     Modifier
                         .size(200.dp)
                         .padding(bottom = 20.dp))
-                menuButton(R.string.starter) { requestCategory(DishType.STARTER, errorState) }
-                menuButton(R.string.main) { requestCategory(DishType.MAIN, errorState) }
-                menuButton(R.string.dessert) { requestCategory(DishType.DESSERT, errorState) }
+                MenuButton(starterString) { requestCategory(starterString, errorState) }
+                MenuButton(mainString) { requestCategory(mainString, errorState) }
+                MenuButton(dessertString) { requestCategory(dessertString, errorState) }
             }
             if (errorState.value) {
                 errorState.value = false
@@ -113,18 +119,17 @@ class MainActivity : ComponentActivity() {
      * @param name: Int - Name of the category
      */
     @Composable
-    fun menuButton(name: Int, onClick : () -> Unit) {
-        val context = LocalContext.current;
+    fun MenuButton(name: String, onClick : () -> Unit) {
         Button(onClick = {
             onClick()
         },
             modifier = Modifier.padding(10.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                containerColor = MaterialTheme.colorScheme.secondaryContainer
             )
         ) {
             Text(
-                text = context.getString(name),
+                text = name,
                 color = MaterialTheme.colorScheme.onPrimary,
                 style = MaterialTheme.typography.headlineSmall
             )
@@ -133,18 +138,18 @@ class MainActivity : ComponentActivity() {
 
     /**
      * Request the category to the server
-     * @param type: DishType - Type of the category
+     * @param title: DishType - Type of the category
      * @param errorState: MutableState<Boolean> - State of the error
      */
-    private fun requestCategory(type: DishType, errorState: MutableState<Boolean>) {
+    private fun requestCategory(title: String, errorState: MutableState<Boolean>) {
         // Request to the server
         val requestBody = JSONObject()
         requestBody.put("id_shop", 1)
         val url = "http://test.api.catering.bluecodegames.com/menu"
-        val cacheKey = "cached_category_${type.typeFr}"
+        val cacheKey = "cached_category_${title}"
 
         // Check if the result is already cached
-        val cachedCategory = getCachedCategory(cacheKey)
+        val cachedCategory = CacheService.getCachedCategory(this, cacheKey)
         if (cachedCategory != null) {
             // Use cached result
             navigateToCategoryActivity(cachedCategory)
@@ -157,10 +162,10 @@ class MainActivity : ComponentActivity() {
             requestBody,
             { response ->
                 val gson = Gson()
-                var listCategory = gson.fromJson(response.toString(), CategoryList::class.java).data.find { it.nameFr == type.typeFr }
+                val listCategory = gson.fromJson(response.toString(), CategoryList::class.java).data.find { it.nameFr == title }
 
                 // Cache the result
-                cacheCategory(this, cacheKey, listCategory)
+                CacheService.cacheCategory(this, cacheKey, listCategory)
 
                 navigateToCategoryActivity(listCategory)
             },
@@ -170,20 +175,6 @@ class MainActivity : ComponentActivity() {
         )
 
         Volley.newRequestQueue(this).add(jsonObjectRequest)
-    }
-
-    /**
-     * Get the cached category, if it exists
-     * @param cacheKey: String - Key of the cache
-     */
-    private fun getCachedCategory(cacheKey: String): Category? {
-        val sharedPreferences = getSharedPreferences("MyCache", Context.MODE_PRIVATE)
-        val cachedCategoryJson = sharedPreferences.getString(cacheKey, null)
-        return if (cachedCategoryJson != null) {
-            Gson().fromJson(cachedCategoryJson, Category::class.java)
-        } else {
-            null
-        }
     }
 
     /**
@@ -198,85 +189,6 @@ class MainActivity : ComponentActivity() {
 
 }
 
-/**
- * Put the category in the cache
- * @param cacheKey: String - Key of the cache
- * @param category: Category? - Category to cache
- */
-fun cacheCategory(context:Context, cacheKey: String, category: Category?) {
-    val sharedPreferences = context.getSharedPreferences("MyCache", Context.MODE_PRIVATE)
-    val editor = sharedPreferences.edit()
-
-    if (category != null) {
-        val categoryJson = Gson().toJson(category)
-        editor.putString(cacheKey, categoryJson)
-    } else {
-        editor.remove(cacheKey)
-    }
-
-    editor.apply()
-}
-
-@Composable
-/**
- * Take the best image from the list and display it and keep it in memory
- * @param images: List<String> - List of images URL
- * @param imageSize: Int - Size of the image
- */
-fun ImageHandler(images: List<String>, imageSize: Int = 100) {
-    val placeholderImage = images.getOrNull(1)
-
-    val painter = rememberAsyncImagePainter(
-        ImageRequest.Builder(LocalContext.current).data(images[0])
-            .apply<ImageRequest.Builder>(fun ImageRequest.Builder.() {
-                crossfade(true)
-                size(imageSize)
-                memoryCachePolicy(CachePolicy.ENABLED)
-                networkCachePolicy(CachePolicy.ENABLED)
-            }).build(),
-        placeholder = painterResource(R.drawable.ic_launcher_background),
-        error = if (placeholderImage.isNullOrBlank()) {
-            painterResource(R.drawable.ic_launcher_background)
-        } else {
-            rememberAsyncImagePainter(images[1])
-        }
-    )
-
-    Image(
-        painter = painter,
-        contentDescription = null,
-        modifier = Modifier
-            .size(imageSize.dp), // Specify the size here
-        contentScale = ContentScale.Crop,
-    )
-}
-
-/**
- * Display the image and keep it in memory
- * @param image: String - Image URL
- */
-@Composable
-fun TakeTheBestImage(image: String) {
-    val painter = rememberAsyncImagePainter(
-        ImageRequest.Builder(LocalContext.current).data(image)
-            .apply<ImageRequest.Builder>(fun ImageRequest.Builder.() {
-                crossfade(true)
-                memoryCachePolicy(CachePolicy.ENABLED)
-                networkCachePolicy(CachePolicy.ENABLED)
-            }).build(),
-        placeholder = painterResource(R.drawable.ic_launcher_background),
-        error = painterResource(R.drawable.ic_launcher_background)
-    )
-
-    Image(
-        painter = painter,
-        contentDescription = null,
-        modifier = Modifier
-            .fillMaxWidth(),
-        contentScale = ContentScale.Crop,
-    )
-}
-
 
 /**
  * Display the header of the application
@@ -286,7 +198,7 @@ fun TakeTheBestImage(image: String) {
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun header(title: String = "PizzaHouse", cartItemCountState : MutableState<Int> = mutableIntStateOf(0)) {
+fun Header(title: String = "PizzaHouse", cartItemCountState : MutableState<Int> = mutableIntStateOf(0)) {
     val context = LocalContext.current
     TopAppBar(
         colors = TopAppBarDefaults.centerAlignedTopAppBarColors(

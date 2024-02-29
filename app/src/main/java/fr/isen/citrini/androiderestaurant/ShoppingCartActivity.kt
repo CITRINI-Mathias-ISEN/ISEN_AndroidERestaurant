@@ -38,6 +38,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.google.gson.Gson
 import fr.isen.citrini.androiderestaurant.service.Cart
+import fr.isen.citrini.androiderestaurant.service.ImageService
 import fr.isen.citrini.androiderestaurant.ui.theme.AndroidERestaurantTheme
 
 class ShoppingCartActivity : ComponentActivity() {
@@ -54,24 +55,24 @@ class ShoppingCartActivity : ComponentActivity() {
     @Composable
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter", "UnrememberedMutableState")
     private fun ShoppingView() {
-        val context = LocalContext.current;
-        var cartState = mutableStateOf(Cart.getCart())
-        var totalState = mutableFloatStateOf(Cart.getTotalPrice())
+        val context = LocalContext.current
+        val cartState = mutableStateOf(Cart.getCart())
+        val totalState = mutableFloatStateOf(Cart.getTotalPrice())
         Scaffold(
             topBar = {
-                shoppingHeader()
+                ShoppingHeader()
             },
             bottomBar = {
-                var total : Float = 0.0f
+                var total = 0.0f
                 for (item in cartState.value) {
                     total += item.dish.prices[0].price * item.quantity
                 }
                 Button(onClick = {
-                    Toast.makeText(context, "Order for ${totalState.value} €", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Order for ${totalState.floatValue} €", Toast.LENGTH_SHORT).show()
                 },
                     enabled = cartState.value.isNotEmpty(),
                     modifier = Modifier.fillMaxWidth()) {
-                    Text("Order for ${totalState.value} €", color = Color.White)
+                    Text("${getString(R.string.order)} ${totalState.floatValue} €", color = Color.White)
                     
                 }
             }
@@ -81,22 +82,19 @@ class ShoppingCartActivity : ComponentActivity() {
                     .fillMaxSize()
                     .padding(top = it.calculateTopPadding())
             ) {
-                cartState.value?.let {items ->
+                cartState.value.let {items ->
                     items(items) { index ->
                         val dish = index.dish
-                        var quantityState = remember { mutableIntStateOf(index.quantity) }
-
-                        // Take the field nameFr from the ingredients list
-                        var ingredients = dish.ingredients.map { it.nameFr }
+                        val quantityState = remember { mutableIntStateOf(index.quantity) }
                         ListItem(
                             headlineContent = {
                                 ListItem(
                                     headlineContent = { Text(dish.nameFr) },
                                     supportingContent = { Text(
-                                        text="Price: ${dish.prices[0].price}€ x ${quantityState.value} = ${dish.prices[0].price * quantityState.value}€",
+                                        text="Price: ${dish.prices[0].price}€ x ${quantityState.intValue} = ${dish.prices[0].price * quantityState.intValue}€",
                                         fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
                                     ) },
-                                    leadingContent = { ImageHandler(dish.images) },
+                                    leadingContent = { ImageService.ImageHandler(dish.images) },
                                 )
                               },
                             supportingContent = {
@@ -105,15 +103,15 @@ class ShoppingCartActivity : ComponentActivity() {
                                     horizontalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    IconButton(onClick = { Cart.removeItem(dish); quantityState.value = quantityState.value - 1; totalState.value = Cart.getTotalPrice(); cartState.value = Cart.getCart() }) {
+                                    IconButton(onClick = { Cart.removeItem(dish); quantityState.intValue = quantityState.intValue - 1; totalState.floatValue = Cart.getTotalPrice(); cartState.value = Cart.getCart() }) {
                                         Icon(painter = painterResource(id = R.drawable.baseline_remove_circle_24), contentDescription = "Remove from cart")
                                     }
-                                    Text(text = quantityState.value.toString() , modifier = Modifier.padding(8.dp))
-                                    IconButton(onClick = { Cart.addDish(dish, 1); quantityState.value = quantityState.value + 1; totalState.value = Cart.getTotalPrice(); cartState.value = Cart.getCart()}) {
+                                    Text(text = quantityState.intValue.toString() , modifier = Modifier.padding(8.dp))
+                                    IconButton(onClick = { Cart.addDish(dish, 1); quantityState.intValue = quantityState.intValue + 1; totalState.floatValue = Cart.getTotalPrice(); cartState.value = Cart.getCart()}) {
                                         Icon(painter = painterResource(id = R.drawable.baseline_add_circle_24), contentDescription = "Add to cart")
                                     }
-                                    Button(onClick = { Cart.deleteItem(dish); totalState.value = Cart.getTotalPrice(); cartState.value = Cart.getCart() }, modifier = Modifier.padding(8.dp)) {
-                                        Text(text = "Delete", color = Color.White)
+                                    Button(onClick = { Cart.deleteItem(dish); totalState.floatValue = Cart.getTotalPrice(); cartState.value = Cart.getCart() }, modifier = Modifier.padding(8.dp)) {
+                                        Text(text = getString(R.string.delete), color = Color.White)
                                     }
                                 }
                             },
@@ -153,14 +151,14 @@ class ShoppingCartActivity : ComponentActivity() {
 
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
-    fun shoppingHeader() {
+    fun ShoppingHeader() {
         TopAppBar(
             colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
                 titleContentColor = MaterialTheme.colorScheme.onPrimary
             ),
             title = {
-                Text(text = "Shopping Cart", color = Color.White)
+                Text(text = getString(R.string.title_activity_shopping_cart), color = Color.White)
             },
         )
     }

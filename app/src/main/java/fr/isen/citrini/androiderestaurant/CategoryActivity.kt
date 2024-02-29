@@ -4,7 +4,6 @@ import Category
 import CategoryList
 import Dish
 import android.annotation.SuppressLint
-import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
@@ -29,7 +28,9 @@ import com.android.volley.toolbox.Volley
 import com.google.accompanist.swiperefresh.SwipeRefresh
 import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import com.google.gson.Gson
+import fr.isen.citrini.androiderestaurant.service.CacheService
 import fr.isen.citrini.androiderestaurant.service.Cart
+import fr.isen.citrini.androiderestaurant.service.ImageService
 import fr.isen.citrini.androiderestaurant.ui.theme.AndroidERestaurantTheme
 import org.json.JSONObject
 
@@ -44,7 +45,7 @@ class CategoryActivity : ComponentActivity() {
 
         setContent {
             AndroidERestaurantTheme {
-                categoryView()
+                CategoryView()
             }
         }
 
@@ -54,7 +55,7 @@ class CategoryActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         Cart.setContext(this)
-        cartItemCountState.value = Cart.getNumberOfItems()
+        cartItemCountState.intValue = Cart.getNumberOfItems()
     }
 
     /**
@@ -63,8 +64,8 @@ class CategoryActivity : ComponentActivity() {
      */
     @Composable
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter", "UnrememberedMutableState")
-    private fun categoryView() {
-        var categoryState = mutableStateOf(category)
+    private fun CategoryView() {
+        val categoryState = mutableStateOf(category)
         SwipeRefresh(
             state = rememberSwipeRefreshState(isRefreshing = false),
             onRefresh = {
@@ -73,7 +74,7 @@ class CategoryActivity : ComponentActivity() {
             content = {
                 Scaffold(
                     topBar = {
-                        header(categoryState.value?.nameFr ?: "Category", cartItemCountState = cartItemCountState)
+                        Header(categoryState.value.nameFr, cartItemCountState = cartItemCountState)
                     }
                 ) {
                     LazyColumn(
@@ -81,7 +82,7 @@ class CategoryActivity : ComponentActivity() {
                             .fillMaxSize()
                             .padding(top = it.calculateTopPadding())
                     ) {
-                        categoryState.value?.let {category ->
+                        categoryState.value.let {category ->
                             items(category.items) { index ->
                                 DishCell(index)
                             }
@@ -98,14 +99,14 @@ class CategoryActivity : ComponentActivity() {
     @Composable
     fun DishCell(dish: Dish) {
         // Take the field nameFr from the ingredients list
-        var ingredients = dish.ingredients.map { it.nameFr }
+        val ingredients = dish.ingredients.map { it.nameFr }
         ListItem(
             headlineContent = { Text(dish.nameFr) },
             supportingContent = { Text(ingredients.joinToString()) },
             trailingContent = {
                 Text(dish.prices[0].price.toString() + "€")
             },
-            leadingContent = { ImageHandler(dish.images) },
+            leadingContent = { ImageService.ImageHandler(dish.images) },
             modifier = Modifier.clickable { onClick(dish) }
         )
     }
@@ -137,10 +138,10 @@ class CategoryActivity : ComponentActivity() {
             requestBody,
             { response ->
                 val gson = Gson()
-                var listCategory = gson.fromJson(response.toString(), CategoryList::class.java).data.find { it.nameFr == type }
+                val listCategory = gson.fromJson(response.toString(), CategoryList::class.java).data.find { it.nameFr == type }
 
                 // Cache the result
-                cacheCategory(this, cacheKey, listCategory)
+                CacheService.cacheCategory(this, cacheKey, listCategory)
                 if (listCategory != null) {
                     categoryState.value = listCategory
                 }

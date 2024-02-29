@@ -74,11 +74,11 @@ class Cart {
         }
 
         fun getNumberOfItems(): Int {
-            return cart.items.sumBy { it.quantity }
+            return cart.items.sumOf { it.quantity }
         }
 
         fun getTotalPrice(): Float {
-            return cart.items.sumByDouble { it.dish.prices[0].price.toDouble() * it.quantity }.toFloat()
+            return cart.items.sumOf { it.dish.prices[0].price.toDouble() * it.quantity }.toFloat()
         }
     }
 }
