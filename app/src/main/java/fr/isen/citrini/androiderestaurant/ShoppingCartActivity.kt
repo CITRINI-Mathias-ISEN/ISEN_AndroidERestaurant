@@ -5,6 +5,7 @@ import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.clickable
@@ -53,6 +54,7 @@ class ShoppingCartActivity : ComponentActivity() {
     @Composable
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter", "UnrememberedMutableState")
     private fun ShoppingView() {
+        val context = LocalContext.current;
         var cartState = mutableStateOf(Cart.getCart())
         var totalState = mutableFloatStateOf(Cart.getTotalPrice())
         Scaffold(
@@ -65,7 +67,7 @@ class ShoppingCartActivity : ComponentActivity() {
                     total += item.dish.prices[0].price * item.quantity
                 }
                 Button(onClick = {
-                    Log.d("ShoppingCartActivity", "Order for $total €")
+                    Toast.makeText(context, "Order for ${totalState.value} €", Toast.LENGTH_SHORT).show()
                 },
                     enabled = cartState.value.isNotEmpty(),
                     modifier = Modifier.fillMaxWidth()) {
