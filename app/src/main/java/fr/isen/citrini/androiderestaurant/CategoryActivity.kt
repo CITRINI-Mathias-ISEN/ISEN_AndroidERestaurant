@@ -103,10 +103,6 @@ class CategoryActivity : ComponentActivity() {
             headlineContent = { Text(dish.nameFr) },
             supportingContent = { Text(ingredients.joinToString()) },
             trailingContent = {
-                if (dish.prices.size > 1)
-                    Text(dish.prices.minOf { it.price.toString() } + "€ - " + dish.prices.maxOf { it.price } + "€")
-                else
-                    Text(dish.prices[0].price.toString() + "€")
                 Text(dish.prices[0].price.toString() + "€")
             },
             leadingContent = { ImageHandler(dish.images) },
